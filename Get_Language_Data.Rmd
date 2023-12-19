@@ -118,7 +118,7 @@ lang_nonEng <- lang_nonEng %>%
   rename(pums_person_weights = PWGTP, age = AGEP, eng_level = ENG_label, household_lang = LANP_label)
 ```
 
-Create Data Frame: lang_totals 
+Create Data Frame: Language Totals 
 ```{r}
 #create new table called lang_totals
 lang_totals <- lang_nonEng %>%
@@ -134,7 +134,7 @@ lang_totals$total_speakers <- format(lang_totals$total_speakers, big.mark = ",",
 #write.csv(lang_totals, "data/lang_totals2021.csv")
 ```
 
-Create Data Frame: langs_by_state
+Create Data Frame: Languages By State
 ```{r}
 langs_by_state <- lang_nonEng %>% 
   group_by(household_lang, state) %>%
@@ -159,15 +159,40 @@ select(state, household_lang, speakers_in_state, percent_state_pop_speaking) #se
 #Add commas to the thousandth place
 langs_by_state$speakers_in_state <- format(langs_by_state$speakers_in_state, big.mark = ",", scientific = FALSE)
 
-#write csv
+
 #write.csv(langs_by_state, "data/langs_by_state.csv")
 ```
 
 
-Languages by State and Age Group
+Create Data Frame: Languages by State and Age Group
 ```{r}
+lang_by_state_age <- lang_nonEng %>%
+  group_by(age_group, household_lang, state) %>%
+  mutate(total_speakers = sum(pums_person_weights)) %>% #create a column called total_speakers
+  select(household_lang, age_group, state, total_speakers) %>%
+  distinct(household_lang, age_group, state, total_speakers) #remove duplicate rows
 
+#Add commas to the thousandth place
+lang_by_state_age$total_speakers <- format(lang_by_state_age$total_speakers, big.mark = ",", scientific = FALSE)
 
+#write.csv(lang_by_state_age, "data/lang_by_state_age2021.csv")
 ```
+
+
+
+Create Data Frame: Languages by State and English Proficiency
+```{r}
+lang_by_state_english_level <- lang_nonEng %>%
+  group_by(eng_level, household_lang, state) %>%
+  mutate(total_speakers = sum(pums_person_weights)) %>% #create a column called total_speakers
+  select(household_lang, eng_level, state, total_speakers) %>%
+  distinct(household_lang, eng_level, state, total_speakers) #remove duplicate rows
+
+#Add commas to the thousandth place
+lang_by_state_english_level$total_speakers <- format(lang_by_state_english_level$total_speakers, big.mark = ",", scientific = FALSE)
+
+#write.csv(lang_by_state_english_level, "data/lang_by_state_english_level2021.csv")
+```
+
 
 
