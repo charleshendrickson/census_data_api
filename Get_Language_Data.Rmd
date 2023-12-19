@@ -195,4 +195,17 @@ lang_by_state_english_level$total_speakers <- format(lang_by_state_english_level
 ```
 
 
+Create Data Frame: Languages by State, Age Group, and English Proficiency
+```{r}
+lang_by_state_age_group_english_level <- lang_nonEng %>%
+  group_by(age_group, eng_level, household_lang, state) %>%
+  mutate(total_speakers = sum(pums_person_weights)) %>% #create a column called total_speakers
+  select(household_lang, age_group, eng_level, state, total_speakers) %>%
+  distinct(household_lang, age_group, eng_level, state, total_speakers) #remove duplicate rows
+
+#Add commas to the thousandth place
+lang_by_state_age_group_english_level$total_speakers <- format(lang_by_state_age_group_english_level$total_speakers, big.mark = ",", scientific = FALSE)
+
+#write.csv(lang_by_state_age_group_english_level, "data/lang_by_state_age_group_english_level2021.csv")
+```
 
