@@ -25,33 +25,52 @@ Sys.getenv("CENSUS_API_KEY")
 
 Load PUMS Data and Create CSV file
 ```{r get data, eval=FALSE, include=FALSE}
-lang_pums <- get_pums(
-  variables = c("LANP", "AGEP", "ENG"),
-  state = "all",
-  survey = "acs5",
-  year = 2021,
-  recode = TRUE
-)
-
-write.csv(lang_pums, "lang_pums.csv")
+# lang_pums <- get_pums(
+#   variables = c("LANP", "AGEP", "ENG"),
+#   state = "all",
+#   survey = "acs5",
+#   year = 2021,
+#   recode = TRUE
+# )
+# 
+# write.csv(lang_pums, "lang_pums.csv")]
+# 
+# lang_pums <- read_csv("data/lang_pums.csv")
 ```
 
 
 Load ACS Data and Create CSV file
 ```{r get data, eval=FALSE, include=FALSE}
-#view variables in data set
-#vars <- load_variables(2017, "acs5", cache = TRUE)
-#view(vars)
+# #view variables in data set
+# vars <- load_variables(2021, "acs5", cache = TRUE)
+# view(vars)
+# 
+# #access data and create csv file
+# state_pops <- get_acs(geography = "state", 
+#                       variables = "B01003_001", #TOTAL POPULATION
+#                       year = 2021)
+# 
+# write.csv(state_pops, "data/state_pops.csv")
+```
 
-#access data and create csv file
-state_pops <- get_acs(geography = "state", 
-                      variables = "B01003_001", 
-                      year = 2021)
+Read in Data
+```{r}
+#read in language data
+lang_pums <- read_csv("lang_pums.csv")
 
-write.csv(state_pops, "state_pops.csv")
+#read in population data
+state_pops <- read_csv("state_pops.csv")
+```
+
+Select Columns From State Pops Data Set 
+```{r}
+state_pops <- state_pops %>%
+  rename(state = NAME, pop_estimate = estimate) %>% 
+  select(state, pop_estimate)
 ```
 
 
+Arrange Language Data
 ```{r}
 totals <- lang_pums %>%
   count(LANP_label, wt = PWGTP)%>%
@@ -60,25 +79,24 @@ totals <- lang_pums %>%
 
 
 ```{r reactable US languages}
-reactable(
-totals,
-searchable = TRUE,
-showPageSizeOptions = TRUE,
-striped = TRUE,
-highlight = TRUE,
-columns = list(
-LANP_label = colDef(name = "Language"),
-n = colDef(name = "Number of Speakers")
-)
-)
+# reactable(
+# totals,
+# searchable = TRUE,
+# showPageSizeOptions = TRUE,
+# striped = TRUE,
+# highlight = TRUE,
+# columns = list(
+# LANP_label = colDef(name = "Language"),
+# n = colDef(name = "Number of Speakers")
+# )
+# )
 ```
 
-Create Basic Data Set
+Select Columns
 ```{r subset data, eval=FALSE, include=FALSE}
 lang_nonEng <- lang_pums %>%
   filter(LANP != "000N")%>%
   select(PWGTP, AGEP, ST_label, ENG_label, LANP_label)
-#write.csv(lang_nonEng, "NonEnglishLanguages2022.csv")
 ```
 
 Create Age Groups
@@ -113,17 +131,43 @@ mutate(total_speakers = sum(pums_person_weights)) %>% #create a column called to
 lang_totals$total_speakers <- format(lang_totals$total_speakers, big.mark = ",", scientific = FALSE)
 
 
-#write.csv(lang_totals, "lang_totals2021.csv")
+#write.csv(lang_totals, "data/lang_totals2021.csv")
 ```
 
 Create Data Frame: langs_by_state
 ```{r}
+langs_by_state <- lang_nonEng %>% 
+  group_by(household_lang, state) %>%
+  mutate(speakers_in_state = sum(pums_person_weights)) %>% 
+  select(household_lang, state, speakers_in_state) %>% 
+  distinct(household_lang, state, speakers_in_state) #remove duplicate rows
+```
 
+Merge language and Population Data
+```{r}
+langs_by_state <- merge(langs_by_state, state_pops, by="state")
+```
+
+Find Percentages
+```{r}
+options(scipen = 999)
+
+langs_by_state <- langs_by_state %>% 
+  mutate(percent_state_pop_speaking = speakers_in_state/pop_estimate) %>%   mutate(across(where(is.numeric), ~ round(., digits = 4))) %>%  #Round percentages to two decimal places
+select(state, household_lang, speakers_in_state, percent_state_pop_speaking) #select columns
+
+#Add commas to the thousandth place
+langs_by_state$speakers_in_state <- format(langs_by_state$speakers_in_state, big.mark = ",", scientific = FALSE)
+
+#write csv
+#write.csv(langs_by_state, "data/langs_by_state.csv")
 ```
 
 
+Languages by State and Age Group
+```{r}
 
 
-
+```
 
 
