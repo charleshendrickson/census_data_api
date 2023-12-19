@@ -1,0 +1,129 @@
+---
+title: "Get Data on Languages Spoken in the US"
+author: Catherine Brockway, PhD; UN CIFAL Honolulu; catherine.lee.brockway@gmail.com
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_download: TRUE
+    theme: sandstone
+    toc: TRUE
+    toc_float: TRUE
+    code_folding: hide
+---
+
+This project seeks to make data about languages spoken in the US accessible to decision-makers in social sector enterprises. 
+
+```{r env setup, include=FALSE}
+library(tidyverse)
+library(tidycensus)
+library(kableExtra)
+library(reactR)
+library(huxtable)
+#set your census api key using instructions at https://walker-data.com/tidycensus/reference/census_api_key.html
+Sys.getenv("CENSUS_API_KEY")
+```
+
+Load PUMS Data and Create CSV file
+```{r get data, eval=FALSE, include=FALSE}
+lang_pums <- get_pums(
+  variables = c("LANP", "AGEP", "ENG"),
+  state = "all",
+  survey = "acs5",
+  year = 2021,
+  recode = TRUE
+)
+
+write.csv(lang_pums, "lang_pums.csv")
+```
+
+
+Load ACS Data and Create CSV file
+```{r get data, eval=FALSE, include=FALSE}
+#view variables in data set
+#vars <- load_variables(2017, "acs5", cache = TRUE)
+#view(vars)
+
+#access data and create csv file
+state_pops <- get_acs(geography = "state", 
+                      variables = "B01003_001", 
+                      year = 2021)
+
+write.csv(state_pops, "state_pops.csv")
+```
+
+
+```{r}
+totals <- lang_pums %>%
+  count(LANP_label, wt = PWGTP)%>%
+  arrange(desc(n))
+```
+
+
+```{r reactable US languages}
+reactable(
+totals,
+searchable = TRUE,
+showPageSizeOptions = TRUE,
+striped = TRUE,
+highlight = TRUE,
+columns = list(
+LANP_label = colDef(name = "Language"),
+n = colDef(name = "Number of Speakers")
+)
+)
+```
+
+Create Basic Data Set
+```{r subset data, eval=FALSE, include=FALSE}
+lang_nonEng <- lang_pums %>%
+  filter(LANP != "000N")%>%
+  select(PWGTP, AGEP, ST_label, ENG_label, LANP_label)
+#write.csv(lang_nonEng, "NonEnglishLanguages2022.csv")
+```
+
+Create Age Groups
+```{r}
+#Create breakpoints for the age groups
+breakpoints <- c(4, 17, 64, Inf)  # Assuming age groups: 5-17, 18-64, 65 and above
+
+#Create new column with age groups
+lang_nonEng$age_group <- cut(lang_nonEng$AGEP, breaks = breakpoints, labels = c("Youth", "Adult", "Senior"))
+```
+
+Create New Columns And Rename Columns
+```{r}
+#create new column for state abbreviations
+lang_nonEng <- lang_nonEng %>% separate(col = ST_label, into = c("state", "state_abb"), sep = "/")
+
+#rename columns
+lang_nonEng <- lang_nonEng %>%
+  rename(pums_person_weights = PWGTP, age = AGEP, eng_level = ENG_label, household_lang = LANP_label)
+```
+
+Create Data Frame: lang_totals 
+```{r}
+#create new table called lang_totals
+lang_totals <- lang_nonEng %>%
+  group_by(household_lang) %>% 
+mutate(total_speakers = sum(pums_person_weights)) %>% #create a column called total_speakers
+  select(household_lang, total_speakers) %>% #select only these two columns
+  distinct(household_lang, total_speakers)  #remove duplicate rows
+
+#Add commas to the thousandth place
+lang_totals$total_speakers <- format(lang_totals$total_speakers, big.mark = ",", scientific = FALSE)
+
+
+#write.csv(lang_totals, "lang_totals2021.csv")
+```
+
+Create Data Frame: langs_by_state
+```{r}
+
+```
+
+
+
+
+
+
+
