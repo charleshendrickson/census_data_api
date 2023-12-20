@@ -56,10 +56,10 @@ Load ACS Data and Create CSV file
 Read in Data
 ```{r}
 #read in language data
-lang_pums <- read_csv("lang_pums.csv")
+lang_pums <- read_csv("data/lang_pums.csv")
 
 #read in population data
-state_pops <- read_csv("state_pops.csv")
+state_pops <- read_csv("data/state_pops.csv")
 ```
 
 Select Columns From State Pops Data Set 
@@ -153,14 +153,15 @@ Find Percentages
 options(scipen = 999)
 
 langs_by_state <- langs_by_state %>% 
-  mutate(percent_state_pop_speaking = speakers_in_state/pop_estimate) %>%   mutate(across(where(is.numeric), ~ round(., digits = 4))) %>%  #Round percentages to two decimal places
+  mutate(percent_state_pop_speaking = speakers_in_state/pop_estimate*100) %>%
+  mutate(across(where(is.numeric), ~ round(., digits = 4))) %>%  #Round percentages to two decimal places
 select(state, household_lang, speakers_in_state, percent_state_pop_speaking) #select columns
 
 #Add commas to the thousandth place
 langs_by_state$speakers_in_state <- format(langs_by_state$speakers_in_state, big.mark = ",", scientific = FALSE)
 
 
-#write.csv(langs_by_state, "data/langs_by_state.csv")
+#write.csv(langs_by_state, "data/langs_by_state2021.csv")
 ```
 
 
@@ -203,9 +204,24 @@ lang_by_state_age_group_english_level <- lang_nonEng %>%
   select(household_lang, age_group, eng_level, state, total_speakers) %>%
   distinct(household_lang, age_group, eng_level, state, total_speakers) #remove duplicate rows
 
+#calculate percent of speakers in state
+lang_by_state_age_group_english_level <- lang_by_state_age_group_english_level %>% 
+  group_by(household_lang) %>% 
+  mutate(total_speakers_in_usa = sum(total_speakers)) %>%
+  mutate(percent_of_speakers_in_state = total_speakers/total_speakers_in_usa*100)
+
+  
+#merge with population data
+lang_by_state_age_group_english_level <- merge(lang_by_state_age_group_english_level, state_pops, by="state")
+  
+
+
+
+
 #Add commas to the thousandth place
 lang_by_state_age_group_english_level$total_speakers <- format(lang_by_state_age_group_english_level$total_speakers, big.mark = ",", scientific = FALSE)
 
 #write.csv(lang_by_state_age_group_english_level, "data/lang_by_state_age_group_english_level2021.csv")
 ```
+
 
