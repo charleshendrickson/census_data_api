@@ -154,7 +154,7 @@ options(scipen = 999)
 
 langs_by_state <- langs_by_state %>% 
   mutate(percent_state_pop_speaking = speakers_in_state/pop_estimate*100) %>%
-  mutate(across(where(is.numeric), ~ round(., digits = 4))) %>%  #Round percentages to two decimal places
+  mutate(across(where(is.numeric), ~ round(., digits = 4))) %>%  #Round percentages to four decimal places
 select(state, household_lang, speakers_in_state, percent_state_pop_speaking) #select columns
 
 #Add commas to the thousandth place
@@ -208,18 +208,26 @@ lang_by_state_age_group_english_level <- lang_nonEng %>%
 lang_by_state_age_group_english_level <- lang_by_state_age_group_english_level %>% 
   group_by(household_lang) %>% 
   mutate(total_speakers_in_usa = sum(total_speakers)) %>%
-  mutate(percent_of_speakers_in_state = total_speakers/total_speakers_in_usa*100)
+  mutate(percent_of_speakers_in_state = total_speakers/total_speakers_in_usa*100) %>% mutate(across(where(is.numeric), ~ round(., digits = 4))) #Round percentages to four decimal places
 
   
 #merge with population data
 lang_by_state_age_group_english_level <- merge(lang_by_state_age_group_english_level, state_pops, by="state")
   
 
+#calculate % of State Population Speaking Language
+lang_by_state_age_group_english_level <- lang_by_state_age_group_english_level %>% 
+  mutate(percent_state_pop_speaking_lang = total_speakers/pop_estimate*100) %>% mutate(across(where(is.numeric), ~ round(., digits = 4))) #Round percentages to four decimal places
+
+#select the columns we will use
+lang_by_state_age_group_english_level <- lang_by_state_age_group_english_level %>%
+  select(state, household_lang, age_group, eng_level, total_speakers,  percent_of_speakers_in_state, percent_state_pop_speaking_lang)
 
 
 
 #Add commas to the thousandth place
 lang_by_state_age_group_english_level$total_speakers <- format(lang_by_state_age_group_english_level$total_speakers, big.mark = ",", scientific = FALSE)
+
 
 #write.csv(lang_by_state_age_group_english_level, "data/lang_by_state_age_group_english_level2021.csv")
 ```
